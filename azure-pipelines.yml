@@ -178,6 +178,8 @@ jobs:
       echo SELECTED_CC=$SELECTED_CC SELECTED_CXX=$SELECTED_CXX REAL_COMPILER_VER=$REAL_COMPILER_VER BuildType=$(BuildType) INVERTED=$(INVERTED) imageName=$(imageName) OS_NAME=$OS_NAME
       echo --- Set cmake parameters
       COMPILE_OPT+=(
+        -DCMAKE_C_FLAGS="-fsanitize=address" 
+        -DCMAKE_CXX_FLAGS="-fsanitize=address" 
         -DCMAKE_C_FLAGS_DEBUG=-g1
         -DCMAKE_CXX_FLAGS_DEBUG=-g1
       )
