@@ -38,13 +38,6 @@ jobs:
   strategy:
     matrix:
 
-      clang-15 RelWithDebInfo [Ubuntu 22.04 Jammy]:
-        imageName: 'ubuntu-22.04'
-        UBUNTU_CODE_NAME: jammy
-        Compiler: clang
-        CompilerVer: 15
-        BuildType: RelWithDebInfo
-
       gcc-12 RelWithDebInfo [Ubuntu 22.04 Jammy]:
         imageName: 'ubuntu-22.04'
         Compiler: gcc
@@ -55,21 +48,12 @@ jobs:
   - script: |
 
       SELECTED_CC=$(Compiler)-$(CompilerVer)
-      if [[ "$(Compiler)" == "clang" ]]; then
-        SELECTED_CXX=clang++-$(CompilerVer)
-        PACKAGES="$SELECTED_CC $PACKAGES"
-      else
-        SELECTED_CXX=g++-$(CompilerVer)
-        PACKAGES="$SELECTED_CXX $PACKAGES"
-      fi
+
+      SELECTED_CXX=g++-$(CompilerVer)
+      PACKAGES="$SELECTED_CXX $PACKAGES"
 
       echo SELECTED_CC=$SELECTED_CC SELECTED_CXX=$SELECTED_CXX BuildType=$(BuildType) imageName=$(imageName) OS_NAME=$OS_NAME
       echo --- Configure required LLVM and Ubuntu Toolchain repositories
-      if [[ "$OS_NAME" == "Linux" ]] && [[ "$SELECTED_CC" == "clang"* ]]; then
-        PACKAGES="llvm-$(CompilerVer)-dev $PACKAGES"
-        curl -sSL "http://apt.llvm.org/llvm-snapshot.gpg.key" | sudo -E apt-key add -
-        echo "deb http://apt.llvm.org/$(UBUNTU_CODE_NAME)/ llvm-toolchain-$(UBUNTU_CODE_NAME)-$(CompilerVer) main" | sudo tee -a /etc/apt/sources.list > /dev/null
-      fi
 
       echo --- Update list of packages and download dependencies
 
@@ -128,10 +112,6 @@ jobs:
       ccache --version
       ccache -p
       ccache --zero-stats
-      df -Th
-      if [[ "$OS_NAME" == "Linux" ]]; then
-        cat /proc/cpuinfo
-      fi
     displayName: '*** System and compiler info'
 
   - script: |
@@ -170,12 +150,6 @@ jobs:
         CMAKE_OPT+="
           -DMYSQL_MAINTAINER_MODE=OFF
           -DWITH_TOKUDB=OFF
-          -DWITH_PROTOBUF=system
-          -DWITH_SYSTEM_LIBS=ON
-          -DWITH_ICU=/usr/local/opt/icu4c
-          -DWITH_SSL=/usr/local/opt/openssl@1.1
-          -DWITH_FIDO=bundled
-          -DWITH_ZLIB=bundled
           -DWITH_PERCONA_AUTHENTICATION_LDAP=OFF
         "
       else
