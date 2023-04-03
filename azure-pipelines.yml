@@ -1,31 +1,9 @@
-schedules:
-- cron: "0 1 * * *"
-  displayName: Daily 1:00 AM UTC build
-  branches:
-    include:
-    - 8.0
-
 trigger:
   branches:
     include:
     - '*'
     exclude:
     - 8.0
-  paths:
-    exclude:
-    - doc
-    - build-ps
-    - man
-    - mysql-test
-    - packaging
-    - policy
-    - scripts
-    - support-files
-
-pr:
-  branches:
-    include:
-    - '*'
   paths:
     exclude:
     - doc
@@ -76,13 +54,7 @@ jobs:
 
   steps:
   - script: |
-      uname -r
-      df -Th
-      ls -l ..
-      pwd
-      ls -l
 
-      if [[ "$OS_NAME" == "Linux" ]]; then
         SELECTED_CC=$(Compiler)-$(CompilerVer)
         if [[ "$(Compiler)" == "clang" ]]; then
           SELECTED_CXX=clang++-$(CompilerVer)
@@ -91,11 +63,6 @@ jobs:
           SELECTED_CXX=g++-$(CompilerVer)
           PACKAGES="$SELECTED_CXX $PACKAGES"
         fi
-      else
-        REAL_COMPILER_VER=`$(Compiler) --version | grep -o "clang version.*" | awk '{print $3}'`
-        SELECTED_CC=$(Compiler)
-        SELECTED_CXX=clang++
-      fi
 
       echo SELECTED_CC=$SELECTED_CC SELECTED_CXX=$SELECTED_CXX BuildType=$(BuildType) INVERTED=$(INVERTED) imageName=$(imageName) OS_NAME=$OS_NAME
       echo --- Configure required LLVM and Ubuntu Toolchain repositories
@@ -106,11 +73,11 @@ jobs:
       fi
 
       echo --- Update list of packages and download dependencies
-      if [[ "$OS_NAME" == "Linux" ]]; then
+
         sudo -E apt-add-repository -y "ppa:ubuntu-toolchain-r/test"
         sudo -E apt-get -yq update >> ~/apt-get-update.log 2>&1
 
-        sudo -E apt-get -yq --no-install-suggests --no-install-recommends --allow-unauthenticated install $PACKAGES cmake cmake-curses-gui ccache bison libudev-dev libaio-dev libmecab-dev libnuma-dev liblzma-dev libssl-dev libreadline-dev libpam-dev libcurl4-openssl-dev libldap2-dev libkrb5-dev libsasl2-dev libsasl2-modules-gssapi-mit || exit 1;
+        sudo -E apt-get -yq --no-install-suggests --no-install-recommends --allow-unauthenticated install $PACKAGES libasan5 cmake cmake-curses-gui ccache bison libudev-dev libaio-dev libmecab-dev libnuma-dev liblzma-dev libssl-dev libreadline-dev libpam-dev libcurl4-openssl-dev libldap2-dev libkrb5-dev libsasl2-dev libsasl2-modules-gssapi-mit || exit 1;
         if [[ "$(INVERTED)" != "ON" ]]; then
           sudo -E apt-get -yq --no-install-suggests --no-install-recommends --allow-unauthenticated install rapidjson-dev zlib1g-dev libzstd-dev liblz4-dev libfido2-dev libevent-dev libreadline-dev protobuf-compiler libprotobuf-dev libprotoc-dev libicu-dev || exit 1;
         fi
@@ -120,10 +87,7 @@ jobs:
         else
           REAL_COMPILER_VER=`$SELECTED_CC --version | head -1 | awk '{print $4}'`
         fi
-      else
-         brew update
-         brew install ccache protobuf lz4 rapidjson openssl@1.1
-      fi
+
 
       UPDATE_TIME=$SECONDS
       echo --- Packages updated in $UPDATE_TIME seconds.
