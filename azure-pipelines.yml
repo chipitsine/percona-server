@@ -55,14 +55,14 @@ jobs:
   steps:
   - script: |
 
-        SELECTED_CC=$(Compiler)-$(CompilerVer)
-        if [[ "$(Compiler)" == "clang" ]]; then
-          SELECTED_CXX=clang++-$(CompilerVer)
-          PACKAGES="$SELECTED_CC $PACKAGES"
-        else
-          SELECTED_CXX=g++-$(CompilerVer)
-          PACKAGES="$SELECTED_CXX $PACKAGES"
-        fi
+      SELECTED_CC=$(Compiler)-$(CompilerVer)
+      if [[ "$(Compiler)" == "clang" ]]; then
+        SELECTED_CXX=clang++-$(CompilerVer)
+        PACKAGES="$SELECTED_CC $PACKAGES"
+      else
+        SELECTED_CXX=g++-$(CompilerVer)
+        PACKAGES="$SELECTED_CXX $PACKAGES"
+      fi
 
       echo SELECTED_CC=$SELECTED_CC SELECTED_CXX=$SELECTED_CXX BuildType=$(BuildType) INVERTED=$(INVERTED) imageName=$(imageName) OS_NAME=$OS_NAME
       echo --- Configure required LLVM and Ubuntu Toolchain repositories
@@ -74,19 +74,19 @@ jobs:
 
       echo --- Update list of packages and download dependencies
 
-        sudo -E apt-add-repository -y "ppa:ubuntu-toolchain-r/test"
-        sudo -E apt-get -yq update >> ~/apt-get-update.log 2>&1
+      sudo -E apt-add-repository -y "ppa:ubuntu-toolchain-r/test"
+      sudo -E apt-get -yq update >> ~/apt-get-update.log 2>&1
 
-        sudo -E apt-get -yq --no-install-suggests --no-install-recommends --allow-unauthenticated install $PACKAGES libasan5 cmake cmake-curses-gui ccache bison libudev-dev libaio-dev libmecab-dev libnuma-dev liblzma-dev libssl-dev libreadline-dev libpam-dev libcurl4-openssl-dev libldap2-dev libkrb5-dev libsasl2-dev libsasl2-modules-gssapi-mit || exit 1;
-        if [[ "$(INVERTED)" != "ON" ]]; then
-          sudo -E apt-get -yq --no-install-suggests --no-install-recommends --allow-unauthenticated install rapidjson-dev zlib1g-dev libzstd-dev liblz4-dev libfido2-dev libevent-dev libreadline-dev protobuf-compiler libprotobuf-dev libprotoc-dev libicu-dev || exit 1;
-        fi
+      sudo -E apt-get -yq --no-install-suggests --no-install-recommends --allow-unauthenticated install $PACKAGES libasan5 cmake cmake-curses-gui ccache bison libudev-dev libaio-dev libmecab-dev libnuma-dev liblzma-dev libssl-dev libreadline-dev libpam-dev libcurl4-openssl-dev libldap2-dev libkrb5-dev libsasl2-dev libsasl2-modules-gssapi-mit || exit 1;
+      if [[ "$(INVERTED)" != "ON" ]]; then
+        sudo -E apt-get -yq --no-install-suggests --no-install-recommends --allow-unauthenticated install rapidjson-dev zlib1g-dev libzstd-dev liblz4-dev libfido2-dev libevent-dev libreadline-dev protobuf-compiler libprotobuf-dev libprotoc-dev libicu-dev || exit 1;
+      fi
 
-        if [[ "$(Compiler)" == "clang" ]]; then
-          REAL_COMPILER_VER=`$SELECTED_CC --version | grep -o "clang version.*" | awk '{print $3}'`
-        else
-          REAL_COMPILER_VER=`$SELECTED_CC --version | head -1 | awk '{print $4}'`
-        fi
+      if [[ "$(Compiler)" == "clang" ]]; then
+        REAL_COMPILER_VER=`$SELECTED_CC --version | grep -o "clang version.*" | awk '{print $3}'`
+      else
+        REAL_COMPILER_VER=`$SELECTED_CC --version | head -1 | awk '{print $4}'`
+      fi
 
 
       UPDATE_TIME=$SECONDS
