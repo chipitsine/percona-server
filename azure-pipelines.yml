@@ -251,8 +251,6 @@ jobs:
 
       BUILD_TIME=$SECONDS
       echo --- Total time $(($BUILD_TIME + $UPDATE_TIME + $CMAKE_TIME)) seconds. Build time $BUILD_TIME seconds. CMake took $CMAKE_TIME seconds. Packages updated in $UPDATE_TIME seconds.
-      df -Th
-      rm -rf *
-      df -Th
+
 
     displayName: '*** Compile'
