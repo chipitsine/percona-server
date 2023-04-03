@@ -34,7 +34,6 @@ jobs:
     CCACHE_MAXSIZE: 2G
     OS_NAME: $(Agent.OS)
     PARENT_BRANCH: 8.0
-    INVERTED: OFF
 
   strategy:
     matrix:
@@ -64,7 +63,7 @@ jobs:
         PACKAGES="$SELECTED_CXX $PACKAGES"
       fi
 
-      echo SELECTED_CC=$SELECTED_CC SELECTED_CXX=$SELECTED_CXX BuildType=$(BuildType) INVERTED=$(INVERTED) imageName=$(imageName) OS_NAME=$OS_NAME
+      echo SELECTED_CC=$SELECTED_CC SELECTED_CXX=$SELECTED_CXX BuildType=$(BuildType) imageName=$(imageName) OS_NAME=$OS_NAME
       echo --- Configure required LLVM and Ubuntu Toolchain repositories
       if [[ "$OS_NAME" == "Linux" ]] && [[ "$SELECTED_CC" == "clang"* ]]; then
         PACKAGES="llvm-$(CompilerVer)-dev $PACKAGES"
@@ -77,10 +76,7 @@ jobs:
       sudo -E apt-add-repository -y "ppa:ubuntu-toolchain-r/test"
       sudo -E apt-get -yq update >> ~/apt-get-update.log 2>&1
 
-      sudo -E apt-get -yq --no-install-suggests --no-install-recommends --allow-unauthenticated install $PACKAGES cmake cmake-curses-gui ccache bison libudev-dev libaio-dev libmecab-dev libnuma-dev liblzma-dev libssl-dev libreadline-dev libpam-dev libcurl4-openssl-dev libldap2-dev libkrb5-dev libsasl2-dev libsasl2-modules-gssapi-mit || exit 1;
-      if [[ "$(INVERTED)" != "ON" ]]; then
-        sudo -E apt-get -yq --no-install-suggests --no-install-recommends --allow-unauthenticated install rapidjson-dev zlib1g-dev libzstd-dev liblz4-dev libfido2-dev libevent-dev libreadline-dev protobuf-compiler libprotobuf-dev libprotoc-dev libicu-dev || exit 1;
-      fi
+      sudo -E apt-get -yq --no-install-suggests --no-install-recommends --allow-unauthenticated install $PACKAGES libasan8 cmake cmake-curses-gui ccache bison libudev-dev libaio-dev libmecab-dev libnuma-dev liblzma-dev libssl-dev libreadline-dev libpam-dev libcurl4-openssl-dev libldap2-dev libkrb5-dev libsasl2-dev libsasl2-modules-gssapi-mit || exit 1;
 
       if [[ "$(Compiler)" == "clang" ]]; then
         REAL_COMPILER_VER=`$SELECTED_CC --version | grep -o "clang version.*" | awk '{print $3}'`
@@ -102,8 +98,8 @@ jobs:
   - task: Cache@2
     continueOnError: true
     inputs:
-      key: '"ccache"| "$(PARENT_BRANCH)" | "$(imageName)-$(Compiler)-$(REAL_COMPILER_VER)-$(BuildType)" | "INVERTED=$(INVERTED)" | "$(Build.SourceVersion)"'
-      restoreKeys: '"ccache" | "$(PARENT_BRANCH)" | "$(imageName)-$(Compiler)-$(REAL_COMPILER_VER)-$(BuildType)" | "INVERTED=$(INVERTED)"'
+      key: '"ccache"| "$(PARENT_BRANCH)" | "$(imageName)-$(Compiler)-$(REAL_COMPILER_VER)-$(BuildType)" | "$(Build.SourceVersion)"'
+      restoreKeys: '"ccache" | "$(PARENT_BRANCH)" | "$(imageName)-$(Compiler)-$(REAL_COMPILER_VER)-$(BuildType)"'
       path: $(CCACHE_DIR)
     displayName: '*** Download/upload ccached files'
 
@@ -139,7 +135,7 @@ jobs:
     displayName: '*** System and compiler info'
 
   - script: |
-      echo SELECTED_CC=$SELECTED_CC SELECTED_CXX=$SELECTED_CXX REAL_COMPILER_VER=$REAL_COMPILER_VER BuildType=$(BuildType) INVERTED=$(INVERTED) imageName=$(imageName) OS_NAME=$OS_NAME
+      echo SELECTED_CC=$SELECTED_CC SELECTED_CXX=$SELECTED_CXX REAL_COMPILER_VER=$REAL_COMPILER_VER BuildType=$(BuildType) imageName=$(imageName) OS_NAME=$OS_NAME
       echo --- Set cmake parameters
       COMPILE_OPT+=(
         -DCMAKE_C_FLAGS="-fsanitize=address" 
@@ -187,45 +183,32 @@ jobs:
           -DMYSQL_MAINTAINER_MODE=ON
           -DWITH_TOKUDB=ON
         "
-        if [[ "$(INVERTED)" != "ON" ]]; then
-          CMAKE_OPT+="
-            -DWITH_MECAB=system
-            -DWITH_NUMA=ON
-            -DWITH_READLINE=system
-            -DWITH_SYSTEM_LIBS=ON
-          "
-          `# Required liblz4 1.9.3 and installed version is 1.9.2`
-          if [[ "$(imageName)" == "ubuntu-20.04" ]]; then
-            CMAKE_OPT+="-DWITH_LZ4=bundled"
-          fi
-        else
-          CMAKE_OPT+="
-            -DWITH_NDB=ON
-            -DWITH_NDBCLUSTER=ON
-            -DWITH_NDB_JAVA=OFF
+        CMAKE_OPT+="
+          -DWITH_NDB=ON
+          -DWITH_NDBCLUSTER=ON
+          -DWITH_NDB_JAVA=OFF
 
-            -DWITH_ROUTER=OFF
-            -DWITH_UNIT_TESTS=OFF
-            -DWITH_NUMA=OFF
+          -DWITH_ROUTER=OFF
+          -DWITH_UNIT_TESTS=OFF
+          -DWITH_NUMA=OFF
 
-            -DWITH_EDITLINE=bundled
-            -DWITH_FIDO=bundled
-            -DWITH_ICU=bundled
-            -DWITH_LIBEVENT=bundled
-            -DWITH_LZ4=bundled
-            -DWITH_PROTOBUF=bundled
-            -DWITH_RAPIDJSON=bundled
-            -DWITH_ZLIB=bundled
-            -DWITH_ZSTD=bundled
+          -DWITH_EDITLINE=bundled
+          -DWITH_FIDO=bundled
+          -DWITH_ICU=bundled
+          -DWITH_LIBEVENT=bundled
+          -DWITH_LZ4=bundled
+          -DWITH_PROTOBUF=bundled
+          -DWITH_RAPIDJSON=bundled
+          -DWITH_ZLIB=bundled
+          -DWITH_ZSTD=bundled
 
-            -DWITH_ARCHIVE_STORAGE_ENGINE=OFF
-            -DWITH_BLACKHOLE_STORAGE_ENGINE=OFF
-            -DWITH_EXAMPLE_STORAGE_ENGINE=ON
-            -DWITH_FEDERATED_STORAGE_ENGINE=OFF
-            -DWITHOUT_PERFSCHEMA_STORAGE_ENGINE=ON
-            -DWITH_INNODB_MEMCACHED=ON
-          "
-        fi
+          -DWITH_ARCHIVE_STORAGE_ENGINE=OFF
+          -DWITH_BLACKHOLE_STORAGE_ENGINE=OFF
+          -DWITH_EXAMPLE_STORAGE_ENGINE=ON
+          -DWITH_FEDERATED_STORAGE_ENGINE=OFF
+          -DWITHOUT_PERFSCHEMA_STORAGE_ENGINE=ON
+          -DWITH_INNODB_MEMCACHED=ON
+        "
       fi
 
       echo --- CMAKE_OPT=\"$CMAKE_OPT\"
